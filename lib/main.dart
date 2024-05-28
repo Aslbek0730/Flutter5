@@ -24,17 +24,31 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<List<dynamic>> _data = [];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('CSV/Excel'),
+        title: Text('CSV/Excel to MySQL'),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () => _pickFile(),
-          child: Text('Upload File'),
-        ),
+      body: Column(
+        children: [
+          ElevatedButton(
+            onPressed: () => _pickFile(),
+            child: Text('Select and Upload File'),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _data.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_data[index].join(', ')),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -62,6 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
     String fileContent = await file.readAsString();
     List<List<dynamic>> csvTable = CsvToListConverter().convert(fileContent);
 
+    setState(() {
+      _data = csvTable;
+    });
+
     await _uploadDataToMySQL(csvTable);
   }
 
@@ -76,16 +94,20 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
+    setState(() {
+      _data = excelTable;
+    });
+
     await _uploadDataToMySQL(excelTable);
   }
 
   Future<void> _uploadDataToMySQL(List<List<dynamic>> data) async {
     final conn = await MySqlConnection.connect(ConnectionSettings(
-      host: 'predator.com',
+      host: 'your-host',
       port: 3306,
-      user: 'Aslbek',
-      db: 'students',
-      password: 'qweqweqwe',
+      user: 'your-username',
+      db: 'your-database',
+      password: 'your-password',
     ));
 
     for (var row in data) {
@@ -94,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'INSERT INTO students (id, first_name, last_name, age) VALUES (?, ?, ?, ?)',
             [row[0], row[1], row[2], row[3]]
         );
-        print('Inserted row id=${result.insertId}'); // Konsolga yozish
+        print('Inserted row id=${result.insertId}');
       }
     }
 
